@@ -1,0 +1,105 @@
+SELECT * FROM [PORTFOLIO ].[dbo].[covid-deaths];
+
+SELECT location, date, total_cases, new_cases 
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+ORDER BY 1,2;
+
+--Finding the percentage of deaths due to covid
+-- How likely you will die if you contract covid and live in Kenya
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 AS percentagedeaths
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+WHERE location like '%kenya%'
+ORDER BY 1,2;
+
+--Finding the percentage of the popn with covid in Kenya
+SELECT location, date, total_cases, population, (total_deaths/population)*100 AS percentageinfected
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+WHERE location like '%kenya%'
+ORDER BY 1,2;
+
+--Finding the continents with the highest no of people infected
+SELECT location, population, max(total_cases) as peopleinfected, max(total_cases/population)*100 AS percentageinfected
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+GROUP BY location, population
+ORDER BY percentageinfected desc;
+
+--Showing countries with the highest death count
+SELECT location, max(cast(total_deaths as int))as totaldeathcount
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+WHERE continent is not null
+GROUP BY location
+ORDER BY totaldeathcount desc;
+
+--Showing countries with the highest death rate
+SELECT location, max(cast(total_deaths as int))as totaldeathcount, max(cast(total_deaths as int)/total_cases) as highestdeathrate
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+WHERE continent is not null
+GROUP BY location
+ORDER BY totaldeathcount desc;
+
+--Showing countries with the highest death count per population
+-- Added the where clause because when the continent is null the location contains a continent instead of a specific country
+SELECT location, max(cast(total_deaths as int))as totaldeathcount, MAX(cast(total_deaths as int)/population) as percentagefeofdeaths
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+where continent is not null
+GROUP BY location
+ORDER BY totaldeathcount desc;
+
+--showing continents with the highest death count per population
+SELECT location, max(cast(total_deaths as int))as totaldeathcount, MAX(cast(total_deaths as int)/population) as percentagefeofdeaths
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+where continent is null
+GROUP BY location
+ORDER BY totaldeathcount desc;
+
+--Finding the sum of new and old cases in the world
+SELECT date, sum(new_cases)as totalcases, sum(convert(int, new_deaths))as totaldeaths
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+GROUP BY date
+order by date desc;
+
+--find the death percentage of new cases vs new deaths in the world
+SELECT sum(new_cases)as totalcases, sum(convert(int, new_deaths))as totaldeaths, sum(new_cases)/sum(convert(int, new_deaths))as percentageofdeaths
+FROM [PORTFOLIO ].[dbo].[covid-deaths]
+order by totalcases, totaldeaths desc;
+
+--combining the two tables
+SELECT *
+FROM [PORTFOLIO ].[dbo].[covid-deaths] DEATHS
+JOIN [PORTFOLIO ].[dbo].[covid_vaccinations] VACCINE
+ON DEATHS.location=VACCINE.location and
+DEATHS.date=VACCINE.date;
+
+--finding the population VS vaccinations
+SELECT DEATHS.date, DEATHs.Population, VACCINE.new_vaccinations
+FROM [PORTFOLIO ].[dbo].[covid-deaths] DEATHS
+JOIN [PORTFOLIO ].[dbo].[covid_vaccinations] VACCINE
+ON DEATHS.location=VACCINE.location and
+DEATHS.date=VACCINE.date
+WHERE DEATHS.continent is not null
+ORDER BY DEATHS.date ;
+
+--Finding the percentage of population that is vaccinated per country--
+SELECT DEATHS.location, DEATHS.Population, VACCINE.total_vaccinations, isnull(nullif(convert(bigint, VACCINE.total_vaccinations), 0)/DEATHs.Population,0)*100 as percentagevaccinated
+FROM [PORTFOLIO ].[dbo].[covid-deaths] DEATHS
+JOIN [PORTFOLIO ].[dbo].[covid_vaccinations] VACCINE
+ON DEATHS.location=VACCINE.location and
+DEATHS.date=VACCINE.date
+WHERE DEATHS.continent is not null
+ORDER BY percentagevaccinated desc;
+
+--finding the total population vaccinated by country
+With popvsvac (continent, location, date, population, new_vaccinations, populationvaccinated)
+as
+(
+SELECT DEATHS.continent, DEATHS.location, DEATHS.date, DEATHs.Population, VACCINE.new_vaccinations,
+SUM(convert(bigint, VACCINE.new_vaccinations)) OVER (Partition by DEATHS.location order by DEATHS.location,DEATHS.date )as populationvaccinated
+FROM [PORTFOLIO ].[dbo].[covid-deaths] DEATHS
+JOIN [PORTFOLIO ].[dbo].[covid_vaccinations] VACCINE
+ON DEATHS.location=VACCINE.location and
+DEATHS.date=VACCINE.date
+WHERE DEATHS.continent is not null
+--ORDER BY 1,2,3
+)
+select *, (populationvaccinated/population)*100 as percentagevaccinated
+from popvsvac;
