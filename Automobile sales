@@ -1,0 +1,70 @@
+select * from projects.dbo.sales_data
+
+--checking unique values
+select distinct status from projects.dbo.sales_data;
+select distinct productline from projects.dbo.sales_data;
+select distinct year_id from projects.dbo.sales_data;
+select distinct territory from projects.dbo.sales_data;
+select distinct dealsize from projects.dbo.sales_data;
+select distinct country from projects.dbo.sales_data;
+
+--ANALYSIS
+-- which product sells the most
+select distinct productline, sum(sales) as totalsales from projects.dbo.sales_data
+group by productline
+order by totalsales desc;
+
+-- which product sells the most every year
+select distinct productline, sum(sales) as totalsales from projects.dbo.sales_data
+where year_id=2003
+group by productline
+order by totalsales desc;
+
+select distinct productline, sum(sales) as totalsales from projects.dbo.sales_data
+where year_id=2004
+group by productline
+order by totalsales desc;
+
+select productline, sum(sales) as totalsales from projects.dbo.sales_data
+where year_id=2005
+group by productline
+order by totalsales desc;
+
+--the year with the highest sales score
+select year_id, sum(sales) as totalsales from projects.dbo.sales_data
+group by year_id
+order by totalsales desc;
+
+--when was the highest sales made in 2004
+select distinct month_id, sum(sales) as totalsales, count(ordernumber) frequency from projects.dbo.sales_data
+where year_id=2004
+group by month_id
+order by totalsales desc;
+
+--since most of the sales were made in November, what was sold most in that month
+select productline, sum(sales) as totalsales,  count(ordernumber) frequency  from projects.dbo.sales_data
+where year_id=2004 and month_id=11
+group by productline
+order by totalsales desc;
+
+--if classic cars was sold most then what dealsize sold most
+select dealsize, sum(sales) as totalsales from projects.dbo.sales_data
+where year_id=2004 and month_id=11 and productline like '%classic cars%'
+group by dealsize
+order by totalsales desc; --if the company wants to increase sales they can sell more of medium deal sized classic cars or any medium sized sized products(including running attractive offers in that category) or if they want to increase sales in other deal sizes then they can put in strategies to help increase that 
+
+--the most bought product from the company
+select productline, sum(sales) as totalsales from projects.dbo.sales_data
+group by productline
+order by totalsales desc;
+
+--the dealsize with the highest number of sales
+select dealsize, sum(sales) as totalsales from projects.dbo.sales_data
+group by dealsize
+order by totalsales desc;
+
+--country with the highest sales score
+select country, productline, sum(sales) as totalsales from projects.dbo.sales_data
+where year_id=2003 and month_id=11 and productline like '%classic cars%'
+group by country, productline
+order by totalsales desc;
